@@ -22,7 +22,7 @@ var connection_options = {
 	'secure': true
 };
 
-var socket = io.connect('https://zoff.no:8880', connection_options);
+var socket = io.connect('http://localhost:8880');
 
 socket.on("connect", function(){
 	//socket.emit("list", "electro");
@@ -63,7 +63,7 @@ client.addListener("message#zoffbot", function(from, message){
 
 		join_channel(channel, zoffchannel);
 	}else if(message.startsWith("!leave")){
-		client.leave(channel);
+		client.part(channel);
 		dbase.channels.remove({channel: channel});
 		delete config.channels[channel];
 	}
