@@ -107,7 +107,7 @@ function send_time(channel){
 	var output;
 
 	dbase.channels.find({channel: channel}, function(err, docs){
-		extraHours = docs[0].time-1;
+		extraHours = docs[0].time+4;
 		date.addHours(extraHours);
 		output 	   = "It's " + daysOfWeek[date.getDay()] + " " + date.getHours() +
 		 ":" + date.getMinutes() + ":" + date.getSeconds() + " for " + channel.substring(1);
