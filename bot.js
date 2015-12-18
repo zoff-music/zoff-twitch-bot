@@ -22,7 +22,7 @@ var connection_options = {
 	'secure': true
 };
 
-var socket = io.connect('http://localhost:8880');
+var socket = io.connect('https://zoff.no:8880', connection_options);
 
 socket.on("connect", function(){
 	//socket.emit("list", "electro");
@@ -46,6 +46,10 @@ client.addListener("message", function(from, to, message){
 		
 		get_info(message.substring(9), config.channels[to], add_song);
 
+	}else if(message == "!np"){
+		socket.emit('now_playing', config.channels[to], function(title){
+			client.say(to, title);
+		});
 	}else{
 		console.log(from + " => " + to + ": " + message);
 	}
