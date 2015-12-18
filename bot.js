@@ -109,8 +109,8 @@ function send_time(channel){
 	dbase.channels.find({channel: channel}, function(err, docs){
 		extraHours = docs[0].time+5;
 		date.addHours(extraHours);
-		output 	   = "It's " + daysOfWeek[date.getDay()] + " " + date.getHours() +
-		 ":" + date.getMinutes() + ":" + date.getSeconds() + " for " + channel.substring(1);
+		output 	   = "It's " + daysOfWeek[date.getDay()] + " " + pad(date.getHours(), 2) +
+		 ":" + pad(date.getMinutes(), 2) + ":" + pad(date.getSeconds(), 2) + " for " + channel.substring(1);
 
 		client.say(channel, output);
 	});
@@ -261,17 +261,11 @@ function remove_from_array(array, element){
     }
 }
 
-/*
-Object.prototype.contains_element = function(element){
-	var i = this.length;
-	while(i--) {
-		if(this[i] === element){
-			return true;
-		}
-	}
-	return false;
+function pad(t, num){
+	if(num == 2) out = t < 10 ? "0"+t : t;
+	else if(num == 3) out = t < 10 ? "00"+t : t < 100 ? "0"+t : t;
+	return out;
 }
-*/
 
 Date.prototype.addHours = function(h) {    
  	this.setTime(this.getTime() + (h*60*60*1000)); 
