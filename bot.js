@@ -7,8 +7,9 @@ var time_regex = /P((([0-9]*\.?[0-9]*)Y)?(([0-9]*\.?[0-9]*)M)?(([0-9]*\.?[0-9]*)
 var secrets    = require('./includes.js');
 var daysOfWeek = new Array('Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday');
 var commands   = ["time", "settime", "request", "np"];
+var actions    = [message_users, fetch_now_playing, send_time, send_help];
 
-var config 	= {
+var config 	   = {
 	server: "irc.twitch.tv",
 	port: 6667,
 	botName: "zoffbot",
@@ -27,6 +28,9 @@ var connection_options = {
 };
 
 var socket = io.connect('https://zoff.no:8880', connection_options);
+
+//setTimeout(advertise, 420000);
+setTimeout(function(){advertise()}, 420000);
 
 socket.on("connect", function(){
 	//socket.emit("list", "electro");
@@ -55,9 +59,7 @@ client.addListener("message", function(from, to, message){
 		get_info(message.substring(9), config.channels[to], add_song);
 
 	}else if(message == "!np"){
-		socket.emit('now_playing', config.channels[to], function(title){
-			client.say(to, title);
-		});
+		fetch_now_playing(to);
 	}else if(message == "!time"){
 		send_time(to);
 	}else if(message.startsWith("!settime")){
@@ -66,6 +68,8 @@ client.addListener("message", function(from, to, message){
 		send_help(to, message);
 	}else if(message.startsWith("!allow")){
 		check_mod(from, to, allow_link, [to, message.substring(7)], true);
+	}else if(message.startsWith("!zoff") || message.startsWith("!channel")){
+		client.say(to, "Listen directly to the channel of the streamer at: https://zoff.no/" + config.channels[to] + " or create your own at https://zoff.no!");
 	}else{
 		if(isUrl(message)){
 			check_mod(from, to, block_url, [to, from], true);
@@ -92,6 +96,26 @@ client.addListener("message#zoffbot", function(from, message){
 		delete config.channels[channel];
 	}
 });
+
+function advertise(){
+	var keys = Object.keys(config.channels);
+	for(x in keys){
+		actions[Math.floor((Math.random()*4))](keys[x]); 
+	}
+	setTimeout(function(){advertise();}, 420000);
+}
+
+function message_users(channel){
+	var find_todo = Math.floor((Math.random()*2));
+	var messages  = ["Check out Zöff at https://zoff.no, and create your own channel!", "Listen directly to this Zöff channel at https://zoff.no/" + config.channels[channel]]
+	client.say(channel, messages[find_todo]);
+}
+
+function fetch_now_playing(channel){
+	socket.emit('now_playing', config.channels[channel], function(title){
+		client.say(channel, "Now playing: " + title);
+	});
+}
 
 function block_url(channel, from){
 	if(!contains(config.allowed[channel], from)){
@@ -123,7 +147,7 @@ function allow_link(channel, allowed){
 }
 
 function send_help(channel, message){
-	if(message == "!help"){
+	if(message == undefined || message == "!help"){
 		client.say(channel, "To request help with any commands, please say !help COMMAND. Available commands are: " + commands);
 	}else{
 		switch(message.substring(6)){
