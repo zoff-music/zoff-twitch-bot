@@ -20,7 +20,7 @@ var config 	   = {
 
 var client = new irc.Client(config.server, config.botName,
 	{password: secrets.password}
-);
+); 
 
 var connection_options = {
 	'sync disconnect on unload':true,
