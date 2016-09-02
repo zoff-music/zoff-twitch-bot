@@ -1,9 +1,9 @@
 var irc 	   = require('irc');
 var mongojs    = require('mongojs');
-var dbase	   = mongojs('zoffbot', ['channels'])
+var dbase	   = mongojs('zoffbot', ['channels']);
 var io 		   = require('socket.io-client');
 var request    = require('request');
-var time_regex = /P((([0-9]*\.?[0-9]*)Y)?(([0-9]*\.?[0-9]*)M)?(([0-9]*\.?[0-9]*)W)?(([0-9]*\.?[0-9]*)D)?)?(T(([0-9]*\.?[0-9]*)H)?(([0-9]*\.?[0-9]*)M)?(([0-9]*\.?[0-9]*)S)?)?/
+var time_regex = /P((([0-9]*\.?[0-9]*)Y)?(([0-9]*\.?[0-9]*)M)?(([0-9]*\.?[0-9]*)W)?(([0-9]*\.?[0-9]*)D)?)?(T(([0-9]*\.?[0-9]*)H)?(([0-9]*\.?[0-9]*)M)?(([0-9]*\.?[0-9]*)S)?)?/;
 var secrets    = require('./includes.js');
 var daysOfWeek = new Array('Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday');
 var commands   = ["time", "settime", "request", "np"];
@@ -13,24 +13,26 @@ var config 	   = {
 	server: "irc.twitch.tv",
 	port: 6667,
 	botName: "zoffbot",
-	channels: {},
+	channels: {"#zoffbot": "zoffbot"},
 	allowed: {},
 	mods: {}
 };
 
 var client = new irc.Client(config.server, config.botName,
 	{password: secrets.password}
-); 
+);
 
 var connection_options = {
 	'sync disconnect on unload':true,
-	'secure': true
+	'secure': true,
+	'extraHeaders':
+		{'origin': 'https://zoff.no '}
+
 };
 
-var socket = io.connect('https://zoff.no:8880', connection_options);
-
-//setTimeout(advertise, 420000);
-setTimeout(function(){advertise()}, 420000);
+var socket = io.connect('http://localhost:8880', connection_options);
+setTimeout(advertise, 420000);
+//setTimeout(function(){advertise()}, 420000);
 
 socket.on("connect", function(){
 	//socket.emit("list", "electro");
@@ -46,7 +48,7 @@ client.addListener('registered', function(message){
 		join_channels();
 	}
 
-})
+});
 
 client.addListener("join", function(channel, who){
 	//console.log(channel, who);
@@ -55,7 +57,7 @@ client.addListener("join", function(channel, who){
 client.addListener("message", function(from, to, message){
 	if(to == "#zoffbot") return;
 	else if(message.startsWith("!request")){
-		
+
 		get_info(message.substring(9), config.channels[to], add_song);
 
 	}else if(message == "!np"){
@@ -99,7 +101,7 @@ client.addListener("message#zoffbot", function(from, message){
 
 function advertise(){
 	var keys = Object.keys(config.channels);
-	for(x in keys){
+	for(var x in keys){
 		actions[Math.floor((Math.random()*4))](keys[x]); 
 	}
 	setTimeout(function(){advertise();}, 420000);
@@ -107,7 +109,7 @@ function advertise(){
 
 function message_users(channel){
 	var find_todo = Math.floor((Math.random()*2));
-	var messages  = ["Check out Zöff at https://zoff.no, and create your own channel!", "Listen directly to this Zöff channel at https://zoff.no/" + config.channels[channel]]
+	var messages  = ["Check out Zöff at https://zoff.no, and create your own channel!", "Listen directly to this Zöff channel at https://zoff.no/" + config.channels[channel]];
 	client.say(channel, messages[find_todo]);
 }
 
@@ -141,13 +143,13 @@ function send_time(channel){
 }
 
 function allow_link(channel, allowed){
-	if(config.allowed[channel] == undefined) config.allowed[channel] = [];
+	if(config.allowed[channel] === undefined) config.allowed[channel] = [];
 	config.allowed[channel].push(allowed);
 	client.say(channel, "Allowed " + allowed + " to send one link.");
 }
 
 function send_help(channel, message){
-	if(message == undefined || message == "!help"){
+	if(message === undefined || message == "!help"){
 		client.say(channel, "To request help with any commands, please say !help COMMAND. Available commands are: " + commands);
 	}else{
 		switch(message.substring(6)){
@@ -161,7 +163,7 @@ function send_help(channel, message){
 				client.say(channel, "This is only for mods, and it sets the streamers timezone in GMT");
 				break;
 			case "time":
-				client.say(channel, "This 'forces' me to tell you what the time is where the streamer lives.")
+				client.say(channel, "This 'forces' me to tell you what the time is where the streamer lives.");
 				break;
 			case "allow":
 				client.say(channel, "This is only for mods, and it allows a specific user to send one link.");
@@ -171,13 +173,13 @@ function send_help(channel, message){
 }
 
 function check_mod(from, channel, command, args, normal){
-	if(config.mods[channel] == undefined){
+	if(config.mods[channel] === undefined){
 		var mods = [];
 		channel  = channel.substring(1);
 		request("http://tmi.twitch.tv/group/user/" + channel + "/chatters", function (err, response, body) {
 			mods = (JSON.parse(body)).chatters.moderators;
 			config.mods["#" + channel] = mods;
-			if(contains(mods, from) == normal) command(args[0], args[1])
+			if(contains(mods, from) == normal) command(args[0], args[1]);
 		});
 	}else{
 		if(contains(config.mods[channel], from)) command(args[0], args[1]);
@@ -186,7 +188,7 @@ function check_mod(from, channel, command, args, normal){
 
 function join_channels(){
 	dbase.channels.find({}, function(err, docs){
-		for(x in docs){
+		for(var x in docs){
 			var channel 	= docs[x].channel;
 			var zoffchannel = docs[x].zoffchannel;
 
@@ -210,7 +212,7 @@ function settime(time_from, channel){
 }
 
 function join_channel(channel, zoff_channel){
-	if(zoff_channel == undefined) zoff_channel = channel.substring(1);
+	if(zoff_channel === undefined) zoff_channel = channel.substring(1);
 
 	config.channels[channel] = zoff_channel;
 	dbase.channels.update({channel: channel}, {channel: channel, zoffchannel: zoff_channel, time:0}, {upsert: true});
@@ -220,9 +222,9 @@ function join_channel(channel, zoff_channel){
 function get_info(id, channel, callback){
 	request("https://www.googleapis.com/youtube/v3/videos?id="+id+"&part=contentDetails,snippet,id&key=" + secrets.key, function (err, response, body) {
 		object 	 = JSON.parse(body);
-		object 	 = object["items"][0];
-		title 	 = object["snippet"]["title"];
-		duration = object["contentDetails"]["duration"]
+		object 	 = object.items[0];
+		title 	 = object.snippet.title;
+		duration = object.contentDetails.duration;
 		duration = durationToSeconds(duration);
 
 		callback({id: id, title: title, duration: duration}, channel);
@@ -249,15 +251,15 @@ function durationToSeconds(duration) {
 }
 
 function isUrl(str) {
- 	var pattern = new RegExp("\\b(((ht|f)tp(s?)\\:\\/\\/|~\\/|\\/)|www.)" + 
-    	"(\\w+:\\w+@)?(([-\\w]+\\.)+(com|org|net|gov" + 
-    	"|mil|biz|info|mobi|name|aero|jobs|museum" + 
-    	"|travel|[a-z]{2}))(:[\\d]{1,5})?" + 
-		"(((\\/([-\\w~!$+|.,=]|%[a-f\\d]{2})+)+|\\/)+|\\?|#)?" + 
-		"((\\?([-\\w~!$+|.,*:]|%[a-f\\d{2}])+=?" + 
-		"([-\\w~!$+|.,*:=]|%[a-f\\d]{2})*)" + 
-		"(&(?:[-\\w~!$+|.,*:]|%[a-f\\d{2}])+=?" + 
-		"([-\\w~!$+|.,*:=]|%[a-f\\d]{2})*)*)*" + 
+ 	var pattern = new RegExp("\\b(((ht|f)tp(s?)\\:\\/\\/|~\\/|\\/)|www.)" +
+    	"(\\w+:\\w+@)?(([-\\w]+\\.)+(com|org|net|gov" +
+    	"|mil|biz|info|mobi|name|aero|jobs|museum" +
+    	"|travel|[a-z]{2}))(:[\\d]{1,5})?" +
+		"(((\\/([-\\w~!$+|.,=]|%[a-f\\d]{2})+)+|\\/)+|\\?|#)?" +
+		"((\\?([-\\w~!$+|.,*:]|%[a-f\\d{2}])+=?" +
+		"([-\\w~!$+|.,*:=]|%[a-f\\d]{2})*)" +
+		"(&(?:[-\\w~!$+|.,*:]|%[a-f\\d{2}])+=?" +
+		"([-\\w~!$+|.,*:=]|%[a-f\\d]{2})*)*)*" +
 		"(#([-\\w~!$+|.,*:=]|%[a-f\\d]{2})*)?\\b");
   	if(!pattern.test(str)) {
     	return false;
@@ -267,7 +269,7 @@ function isUrl(str) {
 }
 
 function contains(a, obj) {
-	if(a == undefined) return false;
+	if(a === undefined) return false;
     var i = a.length;
     while (i--) {
         if (a[i] === obj) {
@@ -275,7 +277,7 @@ function contains(a, obj) {
         }
     }
     return false;
-}   
+}
 
 function remove_from_array(array, element){
     if(contains(array, element)){
@@ -291,10 +293,10 @@ function pad(t, num){
 	return out;
 }
 
-Date.prototype.addHours = function(h) {    
- 	this.setTime(this.getTime() + (h*60*60*1000)); 
- 	return this;   
-}
+Date.prototype.addHours = function(h) {
+ 	this.setTime(this.getTime() + (h*60*60*1000));
+ 	return this;
+};
 
 String.prototype.startsWith = function(searchString, position) {
     position = position || 0;
