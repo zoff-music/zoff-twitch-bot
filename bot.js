@@ -232,7 +232,7 @@ function get_info(id, channel, callback){
 }
 
 function add_song(song_info, channel){
-	socket.emit("add", [song_info.id, song_info.title, "", song_info.duration, channel]);
+	socket.emit("add", {id: song_info.id, title: song_info.title, adminpass: "", duration: song_info.duration, list: channel, playlist: false, num: 0, total: 1});
 	socket.emit("change_channel");
 }
 
