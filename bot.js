@@ -30,7 +30,7 @@ var connection_options = {
 
 };
 
-var socket = io.connect('http://localhost:8880', connection_options);
+var socket = io.connect('https://zoff.no:8880', connection_options);
 setTimeout(advertise, 420000);
 //setTimeout(function(){advertise()}, 420000);
 
@@ -72,6 +72,8 @@ client.addListener("message", function(from, to, message){
 		check_mod(from, to, allow_link, [to, message.substring(7)], true);
 	}else if(message.startsWith("!zoff") || message.startsWith("!channel")){
 		client.say(to, "Listen directly to the channel of the streamer at: https://zoff.no/" + config.channels[to] + " or create your own at https://zoff.no!");
+	}else if(message.startsWith("!promote")){
+		check_mod(from, to, promote, [message.substring(9), to], true);
 	}else{
 		if(isUrl(message)){
 			check_mod(from, to, block_url, [to, from], true);
@@ -140,6 +142,10 @@ function send_time(channel){
 
 		client.say(channel, output);
 	});
+}
+
+function promote(to_promote, channel){
+
 }
 
 function allow_link(channel, allowed){
