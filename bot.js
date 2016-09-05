@@ -26,7 +26,7 @@ var connection_options = {
 	'sync disconnect on unload':true,
 	'secure': true,
 	'extraHeaders':
-		{'origin': 'https://zoff.no '}
+		{'origin': 'https://zoff.no'}
 
 };
 
