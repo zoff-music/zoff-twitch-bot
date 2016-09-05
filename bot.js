@@ -58,7 +58,7 @@ client.addListener("message", function(from, to, message){
 	if(to == "#zoffbot") return;
 	else if(message.startsWith("!request")){
 
-		get_info(message.substring(9), config.channels[to], add_song);
+		get_info(message.substring(9), to, config.channels[to], from, add_song);
 
 	}else if(message == "!np"){
 		fetch_now_playing(to);
@@ -225,7 +225,7 @@ function join_channel(channel, zoff_channel){
 	join_and_change(zoff_channel);
 }
 
-function get_info(id, channel, callback){
+function get_info(id, twitch_channel, channel, requester, callback){
 	request("https://www.googleapis.com/youtube/v3/videos?id="+id+"&part=contentDetails,snippet,id&key=" + secrets.key, function (err, response, body) {
 		object 	 = JSON.parse(body);
 		object 	 = object.items[0];
@@ -233,13 +233,14 @@ function get_info(id, channel, callback){
 		duration = object.contentDetails.duration;
 		duration = durationToSeconds(duration);
 
-		callback({id: id, title: title, duration: duration}, channel);
+		callback({id: id, title: title, duration: duration}, channel, twitch_channel, requester);
 	});
 }
 
-function add_song(song_info, channel){
+function add_song(song_info, channel, twitch_channel, requester){
 	socket.emit("add", {id: song_info.id, title: song_info.title, adminpass: "", duration: song_info.duration, list: channel, playlist: false, num: 0, total: 1});
 	socket.emit("change_channel");
+	client.say(twitch_channel, requester + " requested " + title);
 }
 
 function join_and_change(zoffchannel){
