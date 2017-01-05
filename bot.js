@@ -30,7 +30,7 @@ var connection_options = {
 
 };
 
-var socket = io.connect('https://zoff.no:8880', connection_options);
+var socket = io.connect('https://zoff.no:8080', connection_options);
 setTimeout(advertise, 420000);
 //setTimeout(function(){advertise()}, 420000);
 
