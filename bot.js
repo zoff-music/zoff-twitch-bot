@@ -1,10 +1,10 @@
 var irc 	   = require('irc');
 var mongojs    = require('mongojs');
-var dbase	   = mongojs('zoffbot', ['channels']);
+var secrets    = require('./includes.js');
+var dbase	   = mongojs(secrets.mongojs, ['channels']);
 var io 		   = require('socket.io-client');
 var request    = require('request');
 var time_regex = /P((([0-9]*\.?[0-9]*)Y)?(([0-9]*\.?[0-9]*)M)?(([0-9]*\.?[0-9]*)W)?(([0-9]*\.?[0-9]*)D)?)?(T(([0-9]*\.?[0-9]*)H)?(([0-9]*\.?[0-9]*)M)?(([0-9]*\.?[0-9]*)S)?)?/;
-var secrets    = require('./includes.js');
 var daysOfWeek = new Array('Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday');
 var commands   = ["time", "settime", "request", "np"];
 var actions    = [message_users, fetch_now_playing, send_time, send_help];
