@@ -23,7 +23,7 @@ var client = new irc.Client(config.server, config.botName,
 );
 
 client.addListener('error', function(message) {
-    console.log('error: ', message);
+    //console.log('error: ', message);
 });
 
 var connection_options = {
