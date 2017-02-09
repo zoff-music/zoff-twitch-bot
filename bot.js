@@ -22,6 +22,10 @@ var client = new irc.Client(config.server, config.botName,
 	{password: secrets.password}
 );
 
+client.addListener('error', function(message) {
+    console.log('error: ', message);
+});
+
 var connection_options = {
 	'sync disconnect on unload':true,
 	'secure': true,
