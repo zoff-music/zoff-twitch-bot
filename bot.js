@@ -30,11 +30,11 @@ var connection_options = {
 	'sync disconnect on unload':true,
 	'secure': true,
 	'extraHeaders':
-		{'origin': 'https://zoff.no'}
+		{'origin': 'https://zoff.me'}
 
 };
 
-var socket = io.connect('https://zoff.no:8080', connection_options);
+var socket = io.connect('https://zoff.me:8080', connection_options);
 setTimeout(advertise, 420000);
 //setTimeout(function(){advertise()}, 420000);
 
@@ -75,7 +75,7 @@ client.addListener("message", function(from, to, message){
 	}else if(message.startsWith("!allow")){
 		check_mod(from, to, allow_link, [to, message.substring(7)], true);
 	}else if(message.startsWith("!zoff") || message.startsWith("!channel")){
-		client.say(to, "Listen directly to the channel of the streamer at: https://zoff.no/" + config.channels[to] + " or create your own at https://zoff.no!");
+		client.say(to, "Listen directly to the channel of the streamer at: https://zoff.me/" + config.channels[to] + " or create your own at https://zoff.me!");
 	}else if(message.startsWith("!promote")){
 		check_mod(from, to, promote, [message.substring(9), to], true);
 	}else{
@@ -115,7 +115,7 @@ function advertise(){
 
 function message_users(channel){
 	var find_todo = Math.floor((Math.random()*2));
-	var messages  = ["Check out Zöff at https://zoff.no, and create your own channel!", "Listen directly to this Zöff channel at https://zoff.no/" + config.channels[channel]];
+	var messages  = ["Check out Zöff at https://zoff.me, and create your own channel!", "Listen directly to this Zöff channel at https://zoff.me/" + config.channels[channel]];
 	client.say(channel, messages[find_todo]);
 }
 
