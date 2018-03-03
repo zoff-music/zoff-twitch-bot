@@ -1,14 +1,12 @@
-var irc 	   = require('irc');
 var mongojs    = require('mongojs');
 var secrets    = require('./includes.js');
 var dbase	   = mongojs(secrets.mongojs, ['channels']);
-var io 		   = require('socket.io-client');
 var request    = require('request');
 var time_regex = /P((([0-9]*\.?[0-9]*)Y)?(([0-9]*\.?[0-9]*)M)?(([0-9]*\.?[0-9]*)W)?(([0-9]*\.?[0-9]*)D)?)?(T(([0-9]*\.?[0-9]*)H)?(([0-9]*\.?[0-9]*)M)?(([0-9]*\.?[0-9]*)S)?)?/;
 var daysOfWeek = new Array('Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday');
 var commands   = ["time", "settime", "request", "np"];
-var actions    = [message_users, fetch_now_playing, send_time, send_help];
-
+var actions    = [fetch_now_playing];
+var tmi = require("tmi.js");
 var config 	   = {
 	server: "irc.twitch.tv",
 	port: 6667,
@@ -17,128 +15,183 @@ var config 	   = {
 	allowed: {},
 	mods: {}
 };
-
-var client = new irc.Client(config.server, config.botName,
-	{password: secrets.password}
-);
-
-client.addListener('error', function(message) {
-    //console.log('error: ', message);
-});
-
-var connection_options = {
-	'sync disconnect on unload':true,
-	'secure': true,
-	'extraHeaders':
-		{'origin': 'https://zoff.me'}
-
+var options = {
+    options: {
+        debug: false
+    },
+    connection: {
+        reconnect: true
+    },
+    identity: {
+        username: config.botName,
+        password: secrets.password
+    },
+    channels: ["#zoffbot"]
 };
 
-var socket = io.connect('https://zoff.me:8080', connection_options);
-setTimeout(advertise, 420000);
-//setTimeout(function(){advertise()}, 420000);
+var client = new tmi.client(options);
 
-socket.on("connect", function(){
-	//socket.emit("list", "electro");
-	//console.log("connected");
+// Connect the client to the server..
+client.connect().then(function(data) {
+	join_channels();
 });
 
-client.addListener("raw", function(message){
-	//console.log(message);
-});
+client.on("whisper", function (from, userstate, message, self) {
+	if(self) return;
+	handleOwnChannel(userstate, message, true);
+})
 
-client.addListener('registered', function(message){
-	if(message.rawCommand == 001){
-		join_channels();
-	}
-
-});
-
-client.addListener("join", function(channel, who){
-	//console.log(channel, who);
-});
-
-client.addListener("message", function(from, to, message){
-	if(to == "#zoffbot") return;
-	else if(message.startsWith("!request")){
-
-		get_info(message.substring(9), to, config.channels[to], from, add_song);
-
-	}else if(message == "!np"){
-		fetch_now_playing(to);
-	}else if(message == "!time"){
-		send_time(to);
-	}else if(message.startsWith("!settime")){
-		check_mod(from, to, settime, [message.substring(9), to], true);
-	}else if(message.startsWith("!help")){
-		send_help(to, message);
-	}else if(message.startsWith("!allow")){
-		check_mod(from, to, allow_link, [to, message.substring(7)], true);
-	}else if(message.startsWith("!zoff") || message.startsWith("!channel")){
-		client.say(to, "Listen directly to the channel of the streamer at: https://zoff.me/" + config.channels[to] + " or create your own at https://zoff.me!");
-	}else if(message.startsWith("!promote")){
-		check_mod(from, to, promote, [message.substring(9), to], true);
-	}else{
-		if(isUrl(message)){
-			check_mod(from, to, block_url, [to, from], true);
-		}else{
-			//console.log(from + ":" + to + "=> " + message);
+client.on("chat", function(channel, userstate, message, self) {
+	if(self) return;
+    if(channel == "#zoffbot") {
+        handleOwnChannel(userstate, message, false);
+    } else {
+		if(message.startsWith("!request")) {
+			message = message.split(" ");
+			if(message.length > 1) {
+				get_info(message[1], channel, userstate.username, add_song);
+			}
+		} else if(message == "!np") {
+			fetch_now_playing(channel);
+		} else if(message == "!time") {
+			send_time(channel);
+		} else if(message.startsWith("!settime")) {
+			message = message.split(" ");
+			if(message.length > 1) {
+				check_mod(userstate.username, channel, function(allowed) {
+					settime(message[1], channel);
+				});
+			}
+		} else if(message.startsWith("!help")) {
+			send_help(channel, message);
+		} else if(message.startsWith("!allow")) {
+			message = message.split(" ");
+			if(message.length > 1) {
+				check_mod(userstate.username, channel, function(allowed) {
+					if(allowed) {
+						allow_link(channel, message[1]);
+					}
+				})
+			}
+		} else if(message.startsWith("!zoff") || message.startsWith("!channel")) {
+			client.say(channel, "Listen directly to the channel of the streamer at: https://zoff.me/" + config.channels[channel] + " or create your own at https://zoff.me!");
+		} else if(message.startsWith("!promote")) {
+			//check_mod(from, channel, promote, [message.substring(9), channel], true);
+		} else{
+			if(isUrl(message)) {
+				check_mod(userstate.username, channel, function(allowed) {
+					if(!allowed) {
+						block_url(channel, userstate.username);
+					}
+				});
+			} else{
+				//console.log(from + ":" + channel + "=> " + message);
+			}
 		}
 	}
 });
 
-client.addListener("message#zoffbot", function(from, message){
-	var channel 	= "#" + from;
-	if(message.startsWith("!join")){
-		var length 		= message.length;
-		var zoffchannel = from;
-
-		if(length > 6){
-			zoffchannel = message.substring(6);
+function handleOwnChannel(user, message, secure) {
+    var channel = "#" + user.username;
+    if(message.startsWith("!join")) {
+		message	= message.split(" ");
+		var zoffchannel = user.username;
+		var userpass = "";
+		var adminpass = "";
+		zoffchannel = zoffchannel.replace("#", "");
+		if(message.length > 1 && message[1] != "") {
+			zoffchannel = message[1];
+		}
+		if(message.length > 2 && message[2] != "" && secure) {
+			userpass = message[2];
+		}
+		if(message.length > 3 && message[3] != "" && secure) {
+			adminpass = message[3];
 		}
 
-		join_channel(channel, zoffchannel);
-	}else if(message.startsWith("!leave")){
+		join_channel(channel, zoffchannel, userpass, adminpass);
+		if(secure) {
+			client.whisper(channel, "Joined your channel!");
+			return;
+		}
+		client.say("#zoffbot", "Joined your channel " + user.username.replace("#", ""));
+	} else if(message.startsWith("!leave")) {
 		client.part(channel);
 		dbase.channels.remove({channel: channel});
 		delete config.channels[channel];
+		delete config.allowed[channel];
+		delete config.mods[channel];
+		if(secure) {
+			client.whisper(channel, "Left your channel " + user.username.replace("#", ""));
+			return;
+		}
+		client.say("#zoffbot", "Left your channel " + user.username.replace("#", ""));
 	}
-});
-
-function advertise(){
-	var keys = Object.keys(config.channels);
-	for(var x in keys){
-		actions[Math.floor((Math.random()*4))](keys[x]); 
-	}
-	setTimeout(function(){advertise();}, 420000);
 }
 
-function message_users(channel){
+function addMods(channel, data) {
+    config.mods[channel] = data;
+}
+
+function advertise() {
+	var keys = Object.keys(config.channels);
+	for(var x in keys) {
+		actions[Math.floor((Math.random()*4))](keys[x]); 
+	}
+	setTimeout(function() {advertise();}, 420000);
+}
+
+function message_users(channel) {
 	var find_todo = Math.floor((Math.random()*2));
 	var messages  = ["Check out Zöff at https://zoff.me, and create your own channel!", "Listen directly to this Zöff channel at https://zoff.me/" + config.channels[channel]];
 	client.say(channel, messages[find_todo]);
 }
 
-function fetch_now_playing(channel){
-	socket.emit('now_playing', config.channels[channel], function(title){
-		client.say(channel, "Now playing: " + title);
+function fetch_now_playing(channel) {
+	dbase.channels.find({channel: channel}, function(err, chan) {
+		if(chan.length == 0) {
+			client.say(channel, "Couldn't fetch now playing, are you sure there is something in the list?");
+			return;
+		}
+		//var url = "http://localhost/api/list/avicii/__np__";
+		var url = "https://zoff.me/api/list/" + chan[0].zoffchannel + "/__np__";
+		var data = {
+			uri: url,
+			url: url,
+			form: {
+				"userpass": chan[0].userpass == "" ? "" : chan[0].userpass,
+				"adminpass": chan[0].adminpass == "" ? "" : chan[0].adminpass,
+				"token": secrets.zoff_api_key
+			},
+			method: "POST",
+		};
+
+		request(data, function(err, response, body) {
+			var json;
+			try {
+				json = JSON.parse(body);
+				client.say(channel, "Now playing: \"" + json.results[0].title + "\"");
+			} catch(e) {
+				client.say(channel, "Couldn't fetch now playing, are you sure there is something in the list?");
+			}
+		});
 	});
 }
 
-function block_url(channel, from){
-	if(!contains(config.allowed[channel], from)){
-		client.say(channel, ".timeout " + from + " 1");
-	}else if(contains(config.allowed[channel], from)){
-		remove_from_array(config.allowed[channel], from);
+function block_url(channel, from) {
+	if(config.allowed[channel].indexOf(from) < 0) {
+		client.timeout(channel, from, 1, "link");
+	} else if(config.allowed[channel].indexOf(from) > -1){
+		config.allowed[channel].splice(config.allowed[channel].indexOf(from), 1);
 	}
 }
 
-function send_time(channel){
+function send_time(channel) {
 	var date = new Date();
 	var extraHours;
 	var output;
 
-	dbase.channels.find({channel: channel}, function(err, docs){
+	dbase.channels.find({channel: channel}, function(err, docs) {
 		extraHours = docs[0].time+5;
 		date.addHours(extraHours);
 		output 	   = "It's " + daysOfWeek[date.getDay()] + " " + pad(date.getHours(), 2) +
@@ -148,69 +201,80 @@ function send_time(channel){
 	});
 }
 
-function promote(to_promote, channel){
+
+function promote(to_promote, channel) {
 
 }
 
-function allow_link(channel, allowed){
+function allow_link(channel, allowed) {
 	if(config.allowed[channel] === undefined) config.allowed[channel] = [];
 	config.allowed[channel].push(allowed);
 	client.say(channel, "Allowed " + allowed + " to send one link.");
 }
 
-function send_help(channel, message){
-	if(message === undefined || message == "!help"){
+function send_help(channel, message) {
+	if(message === undefined || message == "!help") {
 		client.say(channel, "To request help with any commands, please say !help COMMAND. Available commands are: " + commands);
-	}else{
-		switch(message.substring(6)){
+	} else{
+		switch(message.substring(6)) {
 			case "request":
-				client.say(channel, "This is used to request a song. If you type !request YOUTUBE_ID (change the YOUTUBE_ID with an actual YouTube ID), you'll request a song on the Zöff channel the streamer is listening on!");
+				client.say(channel, "This is used to request a song. If you type !request YOUTUBE_ID (change the YOUTUBE_ID with an actual YouTube ID), you'll request a song on the Zoff channel the streamer is listening on.");
 				break;
 			case "np":
-				client.say(channel, "This 'forces' me to tell you the currently playing song on the Zöff channel the streamer is listening on!");
+				client.say(channel, "This tells the currently playing song on the Zoff channel of the streamer.");
 				break;
 			case "settime":
-				client.say(channel, "This is only for mods, and it sets the streamers timezone in GMT");
+				client.say(channel, "This is only for mods, and it sets the streamers timezone in GMT. Use with !settime +TIME");
 				break;
 			case "time":
-				client.say(channel, "This 'forces' me to tell you what the time is where the streamer lives.");
+				client.say(channel, "This tells the time of the streamer");
 				break;
 			case "allow":
-				client.say(channel, "This is only for mods, and it allows a specific user to send one link.");
+				client.say(channel, "This is only for mods, and it allows a specific user to send one link. Use with !allow NAME");
 				break;
 		}
 	}
 }
 
-function check_mod(from, channel, command, args, normal){
-	if(config.mods[channel] === undefined){
-		var mods = [];
-		channel  = channel.substring(1);
-		request("http://tmi.twitch.tv/group/user/" + channel + "/chatters", function (err, response, body) {
-			mods = (JSON.parse(body)).chatters.moderators;
-			config.mods["#" + channel] = mods;
-			if(contains(mods, from) == normal) command(args[0], args[1]);
+function check_mod(from, channel, callback) {
+	if(config.mods[channel].indexOf(from) < 0) {
+		client.mods(channel).then(function(data) {
+			addMods(data[0], _data);
+			if(config.mods[channel].indexOf(from) < 0) {
+				callback(false);
+			} else {
+				callback(true);
+			}
+		}).catch(function(err) {
+			callback(false);
 		});
-	}else{
-		if(contains(config.mods[channel], from)) command(args[0], args[1]);
+	} else {
+		callback(true);
 	}
 }
 
-function join_channels(){
-	dbase.channels.find({}, function(err, docs){
-		for(var x in docs){
+function join_channels() {
+	dbase.channels.find({}, function(err, docs) {
+		for(var x in docs) {
 			var channel 	= docs[x].channel;
 			var zoffchannel = docs[x].zoffchannel;
 
 			config.channels[channel] = zoffchannel;
-			client.join(channel);
-			join_and_change(zoffchannel);
+			join(channel);
 		}
 		//socket.emit("add", ["123asd", "superteit", "", '123', "electro"]);
 	});
 }
 
-function settime(time_from, channel){
+function join(channel) {
+    client.join(channel).then(function(data) {
+        client.mods(data[0]).then(function(_data) {
+			addMods(data[0], _data);
+        });
+    });
+}
+
+function settime(time_from, channel) {
 	var time = parseFloat(time_from);
 	var add  = "";
 	if(isNaN(time)) client.say(channel, "\"" + time_from + "\" isn't a number.. Try again");
@@ -221,35 +285,84 @@ function settime(time_from, channel){
 	}
 }
 
-function join_channel(channel, zoff_channel){
-	if(zoff_channel === undefined) zoff_channel = channel.substring(1);
-
+function join_channel(channel, zoff_channel, userpass, adminpass) {
 	config.channels[channel] = zoff_channel;
-	dbase.channels.update({channel: channel}, {channel: channel, zoffchannel: zoff_channel, time:0}, {upsert: true});
-	join_and_change(zoff_channel);
-}
-
-function get_info(id, twitch_channel, channel, requester, callback){
-	request("https://www.googleapis.com/youtube/v3/videos?id="+id+"&part=contentDetails,snippet,id&key=" + secrets.key, function (err, response, body) {
-		object 	 = JSON.parse(body);
-		object 	 = object.items[0];
-		title 	 = object.snippet.title;
-		duration = object.contentDetails.duration;
-		duration = durationToSeconds(duration);
-
-		callback({id: id, title: title, duration: duration}, channel, twitch_channel, requester);
+	dbase.channels.update({channel: channel}, {
+		channel: channel,
+		zoffchannel: zoff_channel,
+		time:0,
+		userpass: userpass,
+		adminpass: adminpass
+	}, {upsert: true}, function(err, docs) {
+		join(channel);
 	});
 }
 
-function add_song(song_info, channel, twitch_channel, requester){
-	socket.emit("add", {id: song_info.id, title: song_info.title, adminpass: "", duration: song_info.duration, list: channel, playlist: false, num: 0, total: 1});
-	socket.emit("change_channel");
-	client.say(twitch_channel, requester + " requested " + title);
+function get_info(id, twitch_channel, requester, callback) {
+	dbase.channels.find({channel: twitch_channel}, function(err, chan) {
+		if(chan.length > 0) {
+			request("https://www.googleapis.com/youtube/v3/videos?id="+id+"&part=contentDetails,snippet,id&key=" + secrets.key, function (err, response, body) {
+				object 	 = JSON.parse(body);
+				object 	 = object.items[0];
+				title 	 = object.snippet.title;
+				duration = object.contentDetails.duration;
+				duration = durationToSeconds(duration);
+
+				callback({id: id, title: title, duration: duration}, chan[0], twitch_channel, requester);
+			});
+		}
+	});
 }
 
-function join_and_change(zoffchannel){
-	socket.emit("list", zoffchannel);
-	socket.emit("change_channel");
+function add_song(song_info, channel, twitch_channel, requester) {
+	var userpass = "";
+	if(channel.userpass) {
+		userpass = channel.userpass;
+	}
+	var adminpass = "";
+	if(channel.adminpass) {
+		adminpass = channel.adminpass;
+	}
+	var url = "https://zoff.me/api/list/" + channel.zoffchannel + "/" + song_info.id;
+	var data = {
+		uri: url,
+		url: url,
+		form: {
+			"title": song_info.title,
+			"duration": song_info.duration,
+			"end_time": song_info.duration,
+			"start_time": 0,
+			"adminpass": adminpass,
+			"userpass": userpass,
+			"token": secrets.zoff_api_key
+		},
+		method: "POST",
+	};
+	request(data, function(err, response, body) {
+		var json = JSON.parse(body);
+		if(json.status == 200) {
+			client.say(twitch_channel, requester + " added \"" + song_info.title + "\"");
+		} else if(json.status == 403) {
+			client.say(twitch_channel, requester + " suggested \"" + song_info.title + "\". It needs an admin to accept it to be valid.");
+		} else if(json.status == 409) {
+			request.put({url: "https://zoff.me/api/list/" + channel.zoffchannel + "/" + song_info.id, form: {
+				adminpass: "",
+				start_time: 0,
+				end_time: song_info.duration,
+				duration: song_info.duration,
+				title: song_info.title,
+				userpass: userpass,
+			}}, function(err, response, body) {
+				if(json.status == 200) {
+					client.say(twitch_channel, requester + " voted on \"" + song_info.title + "\", since it is already in the list.");
+				} else {
+					client.say(twitch_channel, "Couldn't add song, sure the channel is set-up?");
+				}
+			});
+		} else {
+			client.say(twitch_channel, "Couldn't add song, sure the channel is set-up?");
+		}
+	})
 }
 
 function durationToSeconds(duration) {
@@ -290,15 +403,15 @@ function contains(a, obj) {
     return false;
 }
 
-function remove_from_array(array, element){
-    if(contains(array, element)){
+function remove_from_array(array, element) {
+    if(contains(array, element)) {
         var index = array.indexOf(element);
         if(index != -1)
             array.splice(index, 1);
     }
 }
 
-function pad(t, num){
+function pad(t, num) {
 	if(num == 2) out = t < 10 ? "0"+t : t;
 	else if(num == 3) out = t < 10 ? "00"+t : t < 100 ? "0"+t : t;
 	return out;
