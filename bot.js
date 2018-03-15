@@ -153,14 +153,14 @@ function fetch_now_playing(channel) {
 			client.say(channel, "Couldn't fetch now playing, are you sure there is something in the list?");
 			return;
 		}
-		//var url = "http://localhost/api/list/avicii/__np__";
 		var url = "https://zoff.me/api/list/" + chan[0].zoffchannel + "/__np__";
+		//var url = "http://localhost/api/list/new/__np__";
 		var data = {
 			uri: url,
 			url: url,
 			form: {
-				"userpass": chan[0].userpass == "" ? "" : chan[0].userpass,
-				"adminpass": chan[0].adminpass == "" ? "" : chan[0].adminpass,
+				"userpass": chan[0].userpass == "" || chan[0].userpass == undefined ? "" : chan[0].userpass,
+				"adminpass": chan[0].adminpass == "" || chan[0].adminpass == undefined ? "" : chan[0].adminpass,
 				"token": secrets.zoff_api_key
 			},
 			method: "POST",
