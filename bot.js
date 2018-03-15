@@ -143,7 +143,7 @@ function advertise() {
 
 function message_users(channel) {
 	var find_todo = Math.floor((Math.random()*2));
-	var messages  = ["Check out Zöff at https://zoff.me, and create your own channel!", "Listen directly to this Zöff channel at https://zoff.me/" + config.channels[channel]];
+	var messages  = ["Check out Zoff at https://zoff.me, and create your own channel!", "Listen directly to this Zoff channel at https://zoff.me/" + config.channels[channel]];
 	client.say(channel, messages[find_todo]);
 }
 
