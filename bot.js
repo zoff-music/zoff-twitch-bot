@@ -218,7 +218,7 @@ function send_help(channel, message) {
 	} else{
 		switch(message.substring(6)) {
 			case "request":
-				client.say(channel, "This is used to request a song. If you type !request YOUTUBE_ID (change the YOUTUBE_ID with an actual YouTube ID), you'll request a song on the Zoff channel the streamer is listening on.");
+				client.say(channel, "This is used to request a song. If you type !request YOUTUBE_ID (change the YOUTUBE_ID with an actual YouTube ID), you'll request a song on the Zoff channel the streamer is listening on. This only works with YouTube for now.");
 				break;
 			case "np":
 				client.say(channel, "This tells the currently playing song on the Zoff channel of the streamer.");
