@@ -334,7 +334,8 @@ function add_song(song_info, channel, twitch_channel, requester) {
 			"start_time": 0,
 			"adminpass": adminpass,
 			"userpass": userpass,
-			"token": secrets.zoff_api_key
+			"token": secrets.zoff_api_key,
+			"source": "youtube",
 		},
 		method: "POST",
 	};
@@ -352,6 +353,8 @@ function add_song(song_info, channel, twitch_channel, requester) {
 				duration: song_info.duration,
 				title: song_info.title,
 				userpass: userpass,
+				"token": secrets.zoff_api_key,
+				"source": "youtube"
 			}}, function(err, response, body) {
 				if(json.status == 200) {
 					client.say(twitch_channel, requester + " voted on \"" + song_info.title + "\", since it is already in the list.");
