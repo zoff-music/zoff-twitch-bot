@@ -51,6 +51,10 @@ client.on("chat", function(channel, userstate, message, self) {
 			if(message.length > 1) {
 				if(message[1].indexOf("soundcloud.com") > -1) {
 					get_soundcloud(message[1], channel, userstate.username, add_song);
+				} else if(message[1].indexOf("/") > -1) {
+					if(message[1].substring(0,1) == "/") message[1] = "https://soundcloud.com" + message[1];
+					else message[1] = "https://soundcloud.com/" + message[1];
+					get_soundcloud(message[1], channel, userstate.username, add_song);
 				} else {
 					get_info(message[1], channel, userstate.username, add_song);
 				}
@@ -222,7 +226,7 @@ function send_help(channel, message) {
 	} else{
 		switch(message.substring(6)) {
 			case "request":
-				client.say(channel, "This is used to request a song. If you type !request YOUTUBE_ID (change the YOUTUBE_ID with an actual YouTube ID), you'll request a song on the Zoff channel the streamer is listening on. This only works with YouTube for now.");
+				client.say(channel, "This is used to request a song. If you type !request YOUTUBE_ID (change the YOUTUBE_ID with an actual YouTube ID) or !request SOUNDCLOUD_DATA (the text after 'soundcloud(dot)com/'), you'll request a song on the Zoff channel the streamer is listening on. If you have to include the the text after soundcloud(dot)com/");
 				break;
 			case "np":
 				client.say(channel, "This tells the currently playing song on the Zoff channel of the streamer.");
@@ -318,7 +322,6 @@ function get_soundcloud(id, twitch_channel, requester, callback) {
 	                var thumb=song.artwork_url;
 	                if(thumb == null) thumb = song.waveform_url;
 					else thumb = thumb.replace("-large.jpg", "-t500x500.jpg");
-
 					callback({id: id, title: title, duration: duration, source: "soundcloud", thumbnail: thumb}, chan[0], twitch_channel, requester);
 				} catch(e) {
 					client.say(twitch_channel, "Couldn't add song, sure the channel is set-up?");
