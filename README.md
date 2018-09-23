@@ -1,4 +1,4 @@
-# zoff-twitch-bot
+# Zoff twitch-bot
 
 Hi there,
 
