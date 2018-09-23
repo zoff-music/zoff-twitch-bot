@@ -49,7 +49,11 @@ client.on("chat", function(channel, userstate, message, self) {
 		if(message.startsWith("!request")) {
 			message = message.split(" ");
 			if(message.length > 1) {
-				get_info(message[1], channel, userstate.username, add_song);
+				if(message[1].indexOf("soundcloud.com") > -1) {
+					get_soundcloud(message[1], channel, userstate.username, add_song);
+				} else {
+					get_info(message[1], channel, userstate.username, add_song);
+				}
 			}
 		} else if(message == "!np") {
 			fetch_now_playing(channel);
@@ -298,17 +302,46 @@ function join_channel(channel, zoff_channel, userpass, adminpass) {
 	});
 }
 
+function get_soundcloud(id, twitch_channel, requester, callback) {
+	dbase.channels.find({channel: twitch_channel}, function(err, chan) {
+		if(chan.length > 0) {
+			request("http://api.soundcloud.com/resolve/?url=" + id + "&limit=1&client_id=" + secrets.scKey + "&format=json&_status_code_map[200]=200", function (err, response, body) {
+				try {
+					var song = JSON.parse(body);
+					var duration=Math.floor(song.duration / 1000);
+	                var secs = duration;
+					var title=song.title;
+	                if(title.indexOf(song.user.username) == -1) {
+	                    title = song.user.username +  " - " + title;
+	                }
+	                var id=song.id;
+	                var thumb=song.artwork_url;
+	                if(thumb == null) thumb = song.waveform_url;
+					else thumb = thumb.replace("-large.jpg", "-t500x500.jpg");
+
+					callback({id: id, title: title, duration: duration, source: "soundcloud", thumbnail: thumb}, chan[0], twitch_channel, requester);
+				} catch(e) {
+					client.say(twitch_channel, "Couldn't add song, sure the channel is set-up?");
+				}
+			});
+		}
+	});
+}
+
 function get_info(id, twitch_channel, requester, callback) {
 	dbase.channels.find({channel: twitch_channel}, function(err, chan) {
 		if(chan.length > 0) {
 			request("https://www.googleapis.com/youtube/v3/videos?id="+id+"&part=contentDetails,snippet,id&key=" + secrets.key, function (err, response, body) {
-				object 	 = JSON.parse(body);
-				object 	 = object.items[0];
-				title 	 = object.snippet.title;
-				duration = object.contentDetails.duration;
-				duration = durationToSeconds(duration);
-
-				callback({id: id, title: title, duration: duration}, chan[0], twitch_channel, requester);
+				try {
+					object 	 = JSON.parse(body);
+					object 	 = object.items[0];
+					title 	 = object.snippet.title;
+					duration = object.contentDetails.duration;
+					duration = durationToSeconds(duration);
+					callback({id: id, title: title, duration: duration, source: "youtube"}, chan[0], twitch_channel, requester);
+				} catch(e) {
+					client.say(twitch_channel, "Couldn't add song, sure the channel is set-up?");
+				}
 			});
 		}
 	});
@@ -324,19 +357,21 @@ function add_song(song_info, channel, twitch_channel, requester) {
 		adminpass = channel.adminpass;
 	}
 	var url = "https://zoff.me/api/list/" + channel.zoffchannel + "/" + song_info.id;
+	var addObject = {
+		"title": song_info.title,
+		"duration": song_info.duration,
+		"end_time": song_info.duration,
+		"start_time": 0,
+		"adminpass": adminpass,
+		"userpass": userpass,
+		"token": secrets.zoff_api_key,
+		"source": song_info.source,
+	};
+	if(song_info.source == "soundcloud") addObject.thumbnail = song_info.thumbnail;
 	var data = {
 		uri: url,
 		url: url,
-		form: {
-			"title": song_info.title,
-			"duration": song_info.duration,
-			"end_time": song_info.duration,
-			"start_time": 0,
-			"adminpass": adminpass,
-			"userpass": userpass,
-			"token": secrets.zoff_api_key,
-			"source": "youtube",
-		},
+		form: addObject,
 		method: "POST",
 	};
 	request(data, function(err, response, body) {
@@ -346,7 +381,7 @@ function add_song(song_info, channel, twitch_channel, requester) {
 		} else if(json.status == 403) {
 			client.say(twitch_channel, requester + " suggested \"" + song_info.title + "\". It needs an admin to accept it to be valid.");
 		} else if(json.status == 409) {
-			request.put({url: "https://zoff.me/api/list/" + channel.zoffchannel + "/" + song_info.id, form: {
+			addObject = {
 				adminpass: "",
 				start_time: 0,
 				end_time: song_info.duration,
@@ -354,8 +389,10 @@ function add_song(song_info, channel, twitch_channel, requester) {
 				title: song_info.title,
 				userpass: userpass,
 				"token": secrets.zoff_api_key,
-				"source": "youtube"
-			}}, function(err, response, body) {
+				"source": "source"
+			};
+			if(addObject.source == "source") addObject.thumbnail = song_info.thumbnail;
+			request.put({url: "https://zoff.me/api/list/" + channel.zoffchannel + "/" + song_info.id, form: addObject}, function(err, response, body) {
 				if(json.status == 200) {
 					client.say(twitch_channel, requester + " voted on \"" + song_info.title + "\", since it is already in the list.");
 				} else {
