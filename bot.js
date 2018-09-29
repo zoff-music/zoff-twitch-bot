@@ -4,7 +4,7 @@ var dbase	   = mongojs(secrets.mongojs, ['channels']);
 var request    = require('request');
 var time_regex = /P((([0-9]*\.?[0-9]*)Y)?(([0-9]*\.?[0-9]*)M)?(([0-9]*\.?[0-9]*)W)?(([0-9]*\.?[0-9]*)D)?)?(T(([0-9]*\.?[0-9]*)H)?(([0-9]*\.?[0-9]*)M)?(([0-9]*\.?[0-9]*)S)?)?/;
 var daysOfWeek = new Array('Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday');
-var commands   = ["time", "settime", "request", "np"];
+var commands   = ["time", "settime", "request", "np", "moderate"];
 var actions    = [fetch_now_playing];
 var tmi = require("tmi.js");
 var config 	   = {
@@ -67,7 +67,16 @@ client.on("chat", function(channel, userstate, message, self) {
 			message = message.split(" ");
 			if(message.length > 1) {
 				check_mod(userstate.username, channel, function(allowed) {
+					if(!allowed) return;
 					settime(message[1], channel);
+				});
+			}
+		} else if(message.startsWith("!moderate")) {
+			message = message.split(" ");
+			if(message.length > 1) {
+				check_mod(userstate.username, channel, function(allowed) {
+					if(!allowed) return;
+					update_moderate(message[1], channel);
 				});
 			}
 		} else if(message.startsWith("!help")) {
@@ -76,10 +85,9 @@ client.on("chat", function(channel, userstate, message, self) {
 			message = message.split(" ");
 			if(message.length > 1) {
 				check_mod(userstate.username, channel, function(allowed) {
-					if(allowed) {
-						allow_link(channel, message[1]);
-					}
-				})
+					if(!allowed) return;
+					allow_link(channel, message[1]);
+				});
 			}
 		} else if(message.startsWith("!zoff") || message.startsWith("!channel")) {
 			client.say(channel, "Listen directly to the channel of the streamer at: https://zoff.me/" + config.channels[channel] + " or create your own at https://zoff.me!");
@@ -88,9 +96,8 @@ client.on("chat", function(channel, userstate, message, self) {
 		} else{
 			if(isUrl(message)) {
 				check_mod(userstate.username, channel, function(allowed) {
-					if(!allowed) {
-						block_url(channel, userstate.username);
-					}
+					if(allowed) return;
+					block_url(channel, userstate.username);
 				});
 			} else{
 				//console.log(from + ":" + channel + "=> " + message);
@@ -98,6 +105,18 @@ client.on("chat", function(channel, userstate, message, self) {
 		}
 	}
 });
+
+function update_moderate(enabled, channel) {
+	if(enabled != "on" && enabled != "off") {
+		client.say(channel, "That command has to be proceeded with on or off.");
+		return;
+	}
+	enabled = (enabled == 'on');
+	dbase.channels.update({channel: channel}, {moderate: enabled}, function(err, chan) {
+		var toSay = enabled ? "Now moderating your channel, blocking/allowing urls" : "Not moderating your channel";
+		client.say(channel, toSay);
+	});
+}
 
 function handleOwnChannel(user, message, secure) {
     var channel = "#" + user.username;
@@ -187,11 +206,15 @@ function fetch_now_playing(channel) {
 }
 
 function block_url(channel, from) {
-	if(config.allowed[channel].indexOf(from) < 0) {
-		client.timeout(channel, from, 1, "link");
-	} else if(config.allowed[channel].indexOf(from) > -1){
-		config.allowed[channel].splice(config.allowed[channel].indexOf(from), 1);
-	}
+	dbase.channels.find({channel: channel}, function(err, docs) {
+		if(docs[0].hasOwnProperty("moderate") && docs[0].moderate) {
+			if(config.allowed[channel].indexOf(from) < 0) {
+				client.timeout(channel, from, 1, "link");
+			} else if(config.allowed[channel].indexOf(from) > -1){
+				config.allowed[channel].splice(config.allowed[channel].indexOf(from), 1);
+			}
+		}
+	});
 }
 
 function send_time(channel) {
@@ -222,7 +245,7 @@ function allow_link(channel, allowed) {
 
 function send_help(channel, message) {
 	if(message === undefined || message == "!help") {
-		client.say(channel, "To request help with any commands, please say !help COMMAND. Available commands are: " + commands);
+		client.say(channel, "To request help with any commands, please say !help COMMAND. Available commands are: " + commands.join(", "));
 	} else{
 		switch(message.substring(6)) {
 			case "request":
@@ -239,6 +262,9 @@ function send_help(channel, message) {
 				break;
 			case "allow":
 				client.say(channel, "This is only for mods, and it allows a specific user to send one link. Use with !allow NAME");
+				break;
+			case "moderate":
+				client.say(channel, "This is only for mods, and sets me to either moderate or not moderate url posting");
 				break;
 		}
 	}
