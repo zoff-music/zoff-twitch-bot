@@ -4,7 +4,7 @@ var dbase	   = mongojs(secrets.mongojs, ['channels']);
 var request    = require('request');
 var time_regex = /P((([0-9]*\.?[0-9]*)Y)?(([0-9]*\.?[0-9]*)M)?(([0-9]*\.?[0-9]*)W)?(([0-9]*\.?[0-9]*)D)?)?(T(([0-9]*\.?[0-9]*)H)?(([0-9]*\.?[0-9]*)M)?(([0-9]*\.?[0-9]*)S)?)?/;
 var daysOfWeek = new Array('Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday');
-var commands   = ["time", "request", "np"];
+var commands   = ["time", "request", "np", "next"];
 var actions    = [fetch_now_playing];
 var tmi = require("tmi.js");
 var config 	   = {
@@ -61,6 +61,8 @@ client.on("chat", function(channel, userstate, message, self) {
 			}
 		} else if(message == "!np") {
 			fetch_now_playing(channel);
+		} else if(message == "!next") {
+			fetch_next_playing(channel);
 		} else if(message == "!time") {
 			send_time(channel);
 		} else if(message.startsWith("!settime")) {
@@ -174,6 +176,70 @@ function message_users(channel) {
 	client.say(channel, messages[find_todo]);
 }
 
+function fetch_next_playing(channel) {
+	dbase.channels.find({channel: channel}, function(err, chan) {
+		if(chan.length == 0) {
+			client.say(channel, "Couldn't fetch now playing, are you sure there is something in the list?");
+			return;
+		}
+		var url = "https://zoff.me/api/list/" + chan[0].zoffchannel + "/";
+		//var url = "http://localhost/api/list/new/__np__";
+		var data = {
+			uri: url,
+			url: url,
+			method: "GET",
+		};
+		request(data, function(err, response, body) {
+			var json;
+			try {
+				json = JSON.parse(body);
+				if(json.status == 200) {
+					var nextTitle = "";
+					if(json.results.length > 1) {
+						nextTitle =  json.results[1].title;
+					} else if(json.results.length == 1) {
+						nextTitle = json.results[0].title;
+					} else {
+						client.say(channel, "Couldn't find next song for some reason..");
+						return;
+					}
+					client.say(channel, "Next song: \"" + nextTitle + "\"");
+				} else if(json.status == 403) {
+					var data = {
+						uri: url,
+						url: url,
+						form: {
+							"userpass": chan[0].userpass == "" || chan[0].userpass == undefined ? "" : chan[0].userpass,
+							"adminpass": chan[0].adminpass == "" || chan[0].adminpass == undefined ? "" : chan[0].adminpass,
+							"token": secrets.zoff_api_key
+						},
+						method: "POST",
+					};
+					request(data, function(err, response, body) {
+						json = JSON.parse(body);
+						if(json.status == 200) {
+							var nextTitle = "";
+							if(json.results.length > 1) {
+								nextTitle =  json.results[1].title;
+							} else if(json.results.length == 1) {
+								nextTitle = json.results[0].title;
+							} else {
+								client.say(channel, "Couldn't find next song for some reason..");
+								return;
+							}
+							client.say(channel, "Next song: \"" + nextTitle + "\"");
+						} else {
+							client.say(channel, "Couldn't fetch next song, are you sure there is something in the list?");
+						}
+					});
+				}
+			} catch(e) {
+				client.say(channel, "Couldn't fetch next song, are you sure there is something in the list?");
+			}
+		});
+	});
+}
+
 function fetch_now_playing(channel) {
 	dbase.channels.find({channel: channel}, function(err, chan) {
 		if(chan.length == 0) {
@@ -265,6 +331,9 @@ function send_help(channel, message) {
 				break;
 			case "moderate":
 				client.say(channel, "This is only for mods, and sets me to either moderate or not moderate url posting");
+				break;
+			case "next":
+				client.say(channel, "This tells the next song in the playlist");
 				break;
 		}
 	}
