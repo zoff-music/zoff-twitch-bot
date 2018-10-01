@@ -33,6 +33,7 @@ var client = new tmi.client(options);
 
 // Connect the client to the server..
 client.connect().then(function(data) {
+    console.log(data);
 	join_channels();
 });
 
@@ -112,7 +113,7 @@ function update_moderate(enabled, channel) {
 		return;
 	}
 	enabled = (enabled == 'on');
-	dbase.channels.update({channel: channel}, {moderate: enabled}, function(err, chan) {
+	dbase.channels.update({channel: channel}, {$set: {moderate: enabled}}, function(err, chan) {
 		var toSay = enabled ? "Now moderating your channel, blocking/allowing urls" : "Not moderating your channel";
 		client.say(channel, toSay);
 	});
