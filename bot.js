@@ -33,7 +33,6 @@ var client = new tmi.client(options);
 
 // Connect the client to the server..
 client.connect().then(function(data) {
-    console.log(data);
 	join_channels();
 });
 
