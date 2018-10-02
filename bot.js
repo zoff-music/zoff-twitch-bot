@@ -187,7 +187,10 @@ function fetch_next_playing(channel) {
 		var data = {
 			uri: url,
 			url: url,
-			method: "GET",
+            form: {
+                "token": secrets.zoff_api_key
+            },
+			method: "POST",
 		};
 		request(data, function(err, response, body) {
 			var json;
