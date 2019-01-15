@@ -4,7 +4,9 @@ Hi there,
 
 I'm a bot! If you want to use me for listening to Zoff (https://zoff.me) while streaming, and allowing people to request songs through the chat, I'm your guy (or bot).
 
-To have me join your channel, send "!join ZOFF_CHANNEL" in the chat here. If you're using any userpasswords or adminpasswords on your Zoff channel, you can send the join command in a Whisper to me. Then send "!join ZOFF_CHANNEL USERPASSWORD ADMINPASSWORD".
+To have me join your channel, send "!join CHANNELNAME" in the chat here. If you're using any userpasswords or adminpasswords on your Zoff channel, you can send the join command in a Whisper to me. Then send "!join CHANNELNAME USERPASSWORD ADMINPASSWORD". 
+
+Example: If you want the bot to join the channel "kasperrt", with the userpasword: "userpass1" and adminpassword: "adminpass1", you could send: "!join kasperrt userpass1 adminpass1".
 
 If you don't have an adminpassword, you can just leave this blank, but if you have an adminpassword, but not userpassword, you have to enter a dummy-text here, for example "foo".
 
