@@ -145,6 +145,7 @@ function handleOwnChannel(user, message, secure) {
 		}
 		client.say("#zoffbot", "Joined your channel " + user.username.replace("#", ""));
 	} else if(message.startsWith("!leave")) {
+
 		client.part(channel);
 		dbase.channels.remove({channel: channel});
 		delete config.channels[channel];
@@ -266,7 +267,19 @@ function fetch_now_playing(channel) {
 			var json;
 			try {
 				json = JSON.parse(body);
-				client.say(channel, "Now playing: \"" + json.results[0].title + "\"");
+                var link = "";
+                if(json.results[0].source == "youtube") {
+                    link += "https://www.youtube.com/watch?v=" + json.results[0].id;
+                    client.say(channel, "Now playing: \"" + json.results[0].title + "\"");
+                    client.say(channel, "Link: " + link);
+                } else if(json.results[0].source == "soundcloud") {
+                    request("http://api.soundcloud.com/tracks/" + json.results[0].id + "?client_id=" + secrets.scKey, function(err, response, body) {
+                        var object = JSON.parse(body);
+                        link += object.permalink_url;
+                        client.say(channel, "Now playing: \"" + json.results[0].title + "\"");
+                        client.say(channel, "Link: " + link);
+                    });
+                }
 			} catch(e) {
 				client.say(channel, "Couldn't fetch now playing, are you sure there is something in the list?");
 			}
