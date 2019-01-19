@@ -248,8 +248,8 @@ function fetch_next_playing(channel) {
 
 function send_skip(username, channel) {
 	dbase.channels.find({channel: channel}, function(err, chan) {
-		//var url = "https://zoff.me/api/skip/" + chan[0].zoffchannel + "/__np__";
-		var url = "http://localhost/api/skip/now playing/";
+		var url = "https://zoff.me/api/skip/" + chan[0].zoffchannel + "/";
+		//var url = "http://localhost/api/skip/now playing/";
 		var data = {
 			uri: url,
 			url: url,
