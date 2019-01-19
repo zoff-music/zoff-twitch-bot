@@ -284,7 +284,8 @@ function send_skip(username, channel) {
 					client.say(channel, "The channel is skipping too much.");
 					return;
 				} else if(json.status == 200) {
-
+					client.say(channel, "The song was skipped!");
+					return;
 				} else if(json.status == 202) {
 					client.say(channel, json.results[0] + " more are needed to skip the song!");
 					return;
