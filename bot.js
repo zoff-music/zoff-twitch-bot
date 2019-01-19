@@ -4,7 +4,7 @@ var dbase	   = mongojs(secrets.mongojs, ['channels']);
 var request    = require('request');
 var time_regex = /P((([0-9]*\.?[0-9]*)Y)?(([0-9]*\.?[0-9]*)M)?(([0-9]*\.?[0-9]*)W)?(([0-9]*\.?[0-9]*)D)?)?(T(([0-9]*\.?[0-9]*)H)?(([0-9]*\.?[0-9]*)M)?(([0-9]*\.?[0-9]*)S)?)?/;
 var daysOfWeek = new Array('Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday');
-var commands   = ["time", "request", "np", "next"];
+var commands   = ["time", "request", "np", "next", "skip", "channel"];
 var actions    = [fetch_now_playing];
 var tmi = require("tmi.js");
 var config 	   = {
@@ -63,7 +63,9 @@ client.on("chat", function(channel, userstate, message, self) {
 			fetch_now_playing(channel);
 		} else if(message == "!next") {
 			fetch_next_playing(channel);
-		} else if(message == "!time") {
+		} else if(message == "!skip") {
+            send_skip(userstate.username, channel);
+        } else if(message == "!time") {
 			send_time(channel);
 		} else if(message.startsWith("!settime")) {
 			message = message.split(" ");
@@ -244,6 +246,57 @@ function fetch_next_playing(channel) {
 	});
 }
 
+function send_skip(username, channel) {
+	dbase.channels.find({channel: channel}, function(err, chan) {
+		var url = "https://zoff.me/api/skip/" + chan[0].zoffchannel + "/";
+		//var url = "http://localhost/api/skip/now playing/";
+		var data = {
+			uri: url,
+			url: url,
+			form: {
+				"userpass": chan[0].userpass == "" || chan[0].userpass == undefined ? "" : chan[0].userpass,
+				"api_key": secrets.zoff_api_key,
+				"chat_name": username
+			},
+			method: "POST",
+		};
+
+		request(data, function(err, response, body) {
+			var json;
+			try {
+				json = JSON.parse(body);
+				if(json.status == 406) {
+					client.say(channel, "I'm not allowed to skip for now.");
+					return;
+				} else if(json.status == 403) {
+					client.say(channel, "I'm not authenticated on the channel yet.");
+					return;
+				} else if(json.status == 404) {
+					client.say(channel, "Could not find the list to skip on.");
+					return;
+				} else if(json.status == 409) {
+					client.say(channel, "The channel is not set up with strict skips.");
+					return;
+				} else if(json.status == 206) {
+					client.say(channel, "You have already voted to skip on this song " + username + ".");
+					return;
+				} else if(json.status == 429) {
+					client.say(channel, "The channel is skipping too much.");
+					return;
+				} else if(json.status == 200) {
+
+				} else if(json.status == 202) {
+					client.say(channel, json.results[0] + " more are needed to skip the song!");
+					return;
+				}
+			} catch(e) {
+				client.say(channel, "Something went wrong when trying to skip..");
+				return;
+			}
+		});
+	});
+}
+
 function fetch_now_playing(channel) {
 	dbase.channels.find({channel: channel}, function(err, chan) {
 		if(chan.length == 0) {
@@ -336,11 +389,17 @@ function send_help(channel, message) {
 			case "np":
 				client.say(channel, "This tells the currently playing song on the Zoff channel of the streamer.");
 				break;
+			case "skip":
+				client.say(channel, "This is to vote to skip the currently playing song. The channel has to be set up with strict skipping.");
+				break;
 			case "settime":
 				client.say(channel, "This is only for mods, and it sets the streamers timezone in GMT. Use with !settime +TIME");
 				break;
 			case "time":
-				client.say(channel, "This tells the time of the streamer");
+				client.say(channel, "This tells the time of the streamer.");
+				break;
+			case "channel":
+				client.say(channel, "This sends the channel name the streamer is currently listening to.");
 				break;
 			case "allow":
 				client.say(channel, "This is only for mods, and it allows a specific user to send one link. Use with !allow NAME");
