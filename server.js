@@ -90,10 +90,18 @@ passport.use(
       ) {
         if (chan.length > 0) {
           chan[0].twitchId = profile.id;
-          if (chan[0].userpass != "" && chan[0].userpass != undefined) {
+          if (
+            chan[0].userpass != "" &&
+            chan[0].userpass != undefined &&
+            chan[0].userpass != null
+          ) {
             chan[0].userpass = "userpass set";
           }
-          if (chan[0].adminpass != "" && chan[0].adminpass != undefined) {
+          if (
+            chan[0].adminpass != "" &&
+            chan[0].adminpass != undefined &&
+            chan[0].adminpass != null
+          ) {
             chan[0].adminpass = "adminpass set";
           }
           return done(err, chan[0]);
