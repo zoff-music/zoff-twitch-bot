@@ -41,9 +41,7 @@ var client = new tmi.client(options);
 
 // Connect the client to the server..
 function connect() {
-  console.log("hello");
   client.connect().then(function(data) {
-    console.log(data);
     join_channels();
   });
 }
@@ -54,7 +52,6 @@ client.on("whisper", function(from, userstate, message, self) {
 });
 
 client.on("chat", function(channel, userstate, message, self) {
-  console.log("chat", message);
   if (self) return;
   if (channel == "#zoffbot") {
     handleOwnChannel(userstate, message, false);
@@ -180,7 +177,6 @@ function handleOwnChannel(user, message, secure) {
 }
 
 function leaveChannel(channel, user, secure) {
-  console.log("leaving channel", channel);
   client.part(channel);
   dbase.channels.remove({ channel: channel });
   delete config.channels[channel];
@@ -581,7 +577,6 @@ function join_channel(channel, zoffchannel) {
 }
 
 function join(channel) {
-  console.log("joining channel");
   client.join(channel).then(function(data) {
     client.mods(data[0]).then(function(_data) {
       addMods(data[0], _data);

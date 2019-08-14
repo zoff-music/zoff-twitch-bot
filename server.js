@@ -122,7 +122,6 @@ passport.use(
 );
 
 passport.serializeUser(function(user, done) {
-  console.log(user);
   done(null, user);
 });
 
@@ -197,7 +196,6 @@ app.get(
   passport.authenticate("twitch", { failureRedirect: "/" }),
   function(req, res) {
     // Successful authentication, redirect home.
-    console.log(req.user);
     res.redirect("/");
   }
 );

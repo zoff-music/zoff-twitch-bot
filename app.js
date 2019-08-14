@@ -10,7 +10,6 @@ function startSingle() {
   var server;
   var bot = require("./bot.js");
   try {
-    var cert_config = require("cert_config.js");
     var fs = require("fs");
     var privateKey = fs.readFileSync(secrets.cert.privateKey).toString();
     var certificate = fs.readFileSync(secrets.cert.certificate).toString();
