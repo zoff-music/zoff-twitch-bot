@@ -158,6 +158,14 @@ app.post("/save", function(req, res) {
     if (req.body.saveObject.zoffchannel) {
       req.body.saveObject.zoffchannel_initialized = true;
     }
+    if (req.body.savedObject.time) {
+      try {
+        req.body.savedObject.time = parseInt(req.body.savedObject.time);
+      } catch (e) {
+        res.status(403).send({ error: true });
+        return;
+      }
+    }
     dbase.channels.update(
       { channel: req.user.channel },
       { $set: req.body.saveObject },
