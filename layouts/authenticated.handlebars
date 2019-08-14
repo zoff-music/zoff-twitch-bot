@@ -1,0 +1,50 @@
+<header>
+    <nav id="fp-nav">
+        <div class="nav-wrapper">
+            <a href="#" class="brand-logo noselect">
+                <img class="zicon" src="https://zoff.me/assets/images/squareicon_small.png" alt="Zoff" title="Zoff" />
+            </a>
+            <ul class="right">
+                <li><a class="header-buttons waves-effect waves-cyan" id="logout" title="Logout" href="/logout">Logout</a></li>
+            </ul>
+        </div>
+    </nav>
+  </header>
+<main class="container center-align admin_panel">
+  <h1>
+    {{user.channel}}
+  </h1>
+  <div class="row">
+    <div class="input-field col s12">
+      <input placeholder="e.g. weekly" id="zoffchannel" type="text" class="validate" value="{{user.zoffchannel}}">
+      <label for="zoffchannel">Zoff Channel-name</label>
+    </div>
+  </div>
+  <div class="row">
+    <div class="input-field col s12">
+      <input placeholder="e.g. 1" id="time" type="number" class="validate" value="{{user.time}}">
+      <label for="time">GMT+0 time-offset</label>
+    </div>
+  </div>
+  <div class="row">
+    <div class="input-field col s12">
+      <input placeholder="" id="adminpass" type="password" class="validate">
+      <label for="adminpass">Admin-password</label>
+    </div>
+  </div>
+  <div class="row">
+    <div class="input-field col s12">
+      <input placeholder="" id="userpass" type="password" class="validate">
+      <label for="userpass">Channel-password</label>
+    </div>
+  </div>
+  <div class="row">
+    <a class="waves-effect waves-light btn red col s2 offset-s7" id="delete-data-button">
+      <i class="material-icons left">remove</i>delete
+    </a>
+    <a class="waves-effect waves-light btn orange col s2 offset-s1" id="save-data-button">
+      <i class="material-icons left">cloud</i>submit
+    </a>
+  </div>
+</main>
+<script type="text/javascript" src="/assets/js/main.js"></script>
