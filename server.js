@@ -79,7 +79,7 @@ passport.use(
     {
       clientID: secrets.twitchConfig.clientID,
       clientSecret: secrets.twitchConfig.clientSecret,
-      callbackURL: "https://bot.zoff.me/auth/twitch/callback",
+      callbackURL: "http://bot.zoff.me/auth/twitch/callback",
       scope: "user_read"
     },
     function(accessToken, refreshToken, profile, done) {
@@ -164,7 +164,10 @@ app.post("/save", function(req, res) {
       { upsert: true },
       function(err, docs) {
         if (!req.user.zoffchannel_initialized) {
-          bot.join_channel(req.user.channel, req.body.saveObject.zoffchannel);
+          bot.join_channel_from_outside(
+            req.user.channel,
+            req.body.saveObject.zoffchannel
+          );
         }
         res.status(200).send({ error: false, data: req.body });
       }

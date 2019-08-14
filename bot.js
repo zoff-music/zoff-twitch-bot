@@ -571,7 +571,7 @@ function join_channels() {
   });
 }
 
-function join_channel(channel, zoffchannel) {
+function join_channel_from_outside(channel, zoffchannel) {
   config.channels[channel] = zoffchannel;
   join(channel);
 }
@@ -851,6 +851,6 @@ String.prototype.startsWith = function(searchString, position) {
   return this.indexOf(searchString, position) === position;
 };
 
-exports.join_channel = join_channel;
+exports.join_channel_from_outside = join_channel_from_outside;
 exports.leaveChannel = leaveChannel;
 exports.connect = connect;
