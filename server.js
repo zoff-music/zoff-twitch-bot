@@ -79,7 +79,7 @@ passport.use(
     {
       clientID: secrets.twitchConfig.clientID,
       clientSecret: secrets.twitchConfig.clientSecret,
-      callbackURL: "https://bot.zoff.me:8081/auth/twitch/callback",
+      callbackURL: "https://bot.zoff.me/auth/twitch/callback",
       scope: "user_read"
     },
     function(accessToken, refreshToken, profile, done) {
