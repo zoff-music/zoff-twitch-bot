@@ -158,9 +158,9 @@ app.post("/save", function(req, res) {
     if (req.body.saveObject.zoffchannel) {
       req.body.saveObject.zoffchannel_initialized = true;
     }
-    if (req.body.savedObject.time) {
+    if (req.body.saveObject.time) {
       try {
-        req.body.savedObject.time = parseInt(req.body.savedObject.time);
+        req.body.saveObject.time = parseInt(req.body.saveObject.time);
       } catch (e) {
         res.status(403).send({ error: true });
         return;
