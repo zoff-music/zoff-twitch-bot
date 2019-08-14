@@ -79,11 +79,10 @@ passport.use(
     {
       clientID: secrets.twitchConfig.clientID,
       clientSecret: secrets.twitchConfig.clientSecret,
-      callbackURL: "http://bot.zoff.me/auth/twitch/callback",
+      callbackURL: secrets.twitchConfig.redirectURI,
       scope: "user_read"
     },
     function(accessToken, refreshToken, profile, done) {
-      //console.log(profile.username);
       dbase.channels.find({ channel: "#" + profile.username }, function(
         err,
         chan
@@ -154,10 +153,59 @@ app.get("/", function(req, res) {
       } else {
         data.user = req.user;
       }
+      if (data.user.commands == undefined) {
+        data.user.commands = [];
+      }
       res.render("authenticated", data);
     });
   } else {
     res.render("not_authenticated", data);
+  }
+});
+
+app.post("/saveCommand", function(req, res) {
+  if (req.user) {
+    dbase.channels.update(
+      { channel: req.user.channel },
+      { $pull: { commands: { key: req.body.key } } },
+      function(err) {
+        dbase.channels.update(
+          { channel: req.user.channel },
+          {
+            $addToSet: {
+              commands: { key: req.body.key, value: req.body.value }
+            }
+          },
+          function(err) {
+            if (err) {
+              res.status(500).send({ error: true });
+              return;
+            }
+            res.status(200).send({ error: false });
+          }
+        );
+      }
+    );
+  } else {
+    res.status(403).send({ error: true });
+  }
+});
+
+app.post("/deleteCommand", function(req, res) {
+  if (req.user) {
+    dbase.channels.update(
+      { channel: req.user.channel },
+      { $pull: { commands: { key: req.body.key } } },
+      function(err) {
+        if (err) {
+          res.status(500).send({ error: true });
+          return;
+        }
+        res.status(200).send({ error: false });
+      }
+    );
+  } else {
+    res.status(403).send({ error: true });
   }
 });
 

@@ -1,15 +1,15 @@
 <header>
-    <nav id="fp-nav">
-        <div class="nav-wrapper">
-            <a href="#" class="brand-logo noselect">
-                <img class="zicon" src="https://zoff.me/assets/images/squareicon_small.png" alt="Zoff" title="Zoff" />
-            </a>
-            <ul class="right">
-                <li><a class="header-buttons waves-effect waves-cyan" id="logout" title="Logout" href="/logout">Logout</a></li>
-            </ul>
-        </div>
-    </nav>
-  </header>
+  <nav id="fp-nav">
+    <div class="nav-wrapper">
+      <a href="#" class="brand-logo noselect">
+        <img class="zicon" src="https://zoff.me/assets/images/squareicon_small.png" alt="Zoff" title="Zoff" />
+      </a>
+      <ul class="right">
+        <li><a class="header-buttons waves-effect waves-cyan" id="logout" title="Logout" href="/logout">Logout</a></li>
+      </ul>
+    </div>
+  </nav>
+</header>
 <main class="container center-align admin_panel">
   <h1>
     {{user.channel}}
@@ -45,6 +45,49 @@
     <a class="waves-effect waves-light btn orange col s2 offset-s1" id="save-data-button">
       <i class="material-icons left">cloud</i>submit
     </a>
+  </div>
+  <br><br><br>
+  <div class="command-container">
+    {{#each user.commands}}
+    <div class="row container-{{this.key}}">
+      <div class="input-field col s3">
+        <input disabled id="key-{{this.key}}" type="text" class="validate" value="{{this.key}}">
+        <label for="key-{{this.key}}" >Command</label>
+      </div>
+      <div class="input-field col s7">
+        <input id="value-{{this.key}}" type="text" class="validate" value="{{this.value}}">
+        <label for="value-{{this.key}}">Response</label>
+      </div>
+      <a class="waves-effect waves-light btn red col s1 delete-command-button delete-command-key-{{this.key}}" data-for-key="{{this.key}}">
+        <i class="material-icons">remove</i>
+      </a>
+      <a class="waves-effect waves-light btn green col s1 save-command-button save-command-key-{{this.key}}" data-for-key="{{this.key}}">
+        <i class="material-icons">check</i>
+      </a>
+    </div>
+    {{/each}}
+  </div>
+  <a class="waves-effect waves-light btn green col s12" id="add-new-command-button">
+    <i class="material-icons left">add</i>Add new command
+  </a>
+  <br><br>
+  <div style="display:none;" id="new-command-template">
+    <div class="row">
+      <div class="input-field col s3">
+        <input id="key-" type="text" class="validate" value="">
+        <label for="key-" class="label-key">Command</label>
+      </div>
+      <div class="input-field col s7">
+        <input id="value-" type="text" class="validate" value="">
+        <label for="value-" class="label-value">Response</label>
+      </div>
+      <a class="waves-effect waves-light btn red col s1 delete-command-button" data-for-key="" data-saved="false">
+        <i class="material-icons">remove</i>
+      </a>
+      <a class="waves-effect waves-light btn green col s1 save-command-button" data-for-key="" data-saved="false">
+        <i class="material-icons">check</i>
+      </a>
+    </div>
   </div>
 </main>
 <script type="text/javascript" src="/assets/js/main.js"></script>

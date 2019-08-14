@@ -111,7 +111,15 @@ client.on("chat", function(channel, userstate, message, self) {
           config.channels[channel] +
           " or create your own at https://zoff.me!"
       );
-    } else if (message.startsWith("!promote")) {
+    } else if (message.startsWith("!")) {
+      dbase.channels.find({ channel: channel }, function(err, docs) {
+        if (err || docs.length == 0) return;
+        var commands = docs[0].commands || [];
+        var matching_command = commands.find(element => element.key == message);
+        if (matching_command != undefined) {
+          client.say(channel, matching_command.value);
+        }
+      });
       //check_mod(from, channel, promote, [message.substring(9), channel], true);
     } else {
       if (isUrl(message)) {
