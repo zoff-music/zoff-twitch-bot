@@ -158,11 +158,11 @@ app.post("/save", function(req, res) {
     if (req.body.saveObject.zoffchannel) {
       req.body.saveObject.zoffchannel_initialized = true;
     }
-    if (req.body.saveObject.time) {
+    if (req.body.saveObject.time != undefined) {
       try {
         req.body.saveObject.time = parseInt(req.body.saveObject.time);
       } catch (e) {
-        res.status(403).send({ error: true });
+        res.status(500).send({ error: true });
         return;
       }
     }
