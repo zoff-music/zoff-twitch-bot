@@ -19,6 +19,9 @@ window.addEventListener("load", function() {
   document.getElementById("zoffchannel").addEventListener("change", function() {
     dirtyFields.zoffchannel = true;
   });
+  document.getElementById("moderate").addEventListener("change", function() {
+    dirtyFields.moderate = true;
+  });
   document
     .getElementById("add-new-command-button")
     .addEventListener("click", addNewCommand);
@@ -43,7 +46,8 @@ var dirtyFields = {
   adminpass: false,
   userpass: false,
   time: false,
-  zoffchannel: false
+  zoffchannel: false,
+  moderate: false
 };
 
 function createElementFromHTML(htmlString) {
@@ -305,6 +309,9 @@ function submitData() {
   }
   if (dirtyFields.time) {
     sendObject.time = document.getElementById("time").value;
+  }
+  if (dirtyFields.moderate) {
+    sendObject.moderate = document.getElementById("moderate").checked;
   }
   Helper.ajax({
     method: "POST",

@@ -39,6 +39,17 @@
     </div>
   </div>
   <div class="row">
+      <label for="moderate" class="col s8 moderate-label">Moderate chat for urls, and timeout unauthorized posting</label>
+      <div class="switch">
+        <label>
+          Off
+          <input type="checkbox" id="moderate" {{#if user.moderate}}checked{{/if}}>
+          <span class="lever"></span>
+          On
+        </label>
+    </div>
+  </div>
+  <div class="row">
     <a class="waves-effect waves-light btn red col s2 offset-s7" id="delete-data-button">
       <i class="material-icons left">remove</i>delete
     </a>
