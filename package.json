@@ -20,9 +20,9 @@
     "passport-twitch": "^1.0.3",
     "path": "^0.12.7",
     "referrer-policy": "^1.2.0",
-    "request": "^2.74.0",
+    "request": "^2.88.0",
     "soundcloud-nodejs-api-wrapper": "^0.3.2",
-    "tmi.js": "^1.2.1"
+    "tmi.js": "^1.4.5"
   },
   "devDependencies": {},
   "scripts": {
