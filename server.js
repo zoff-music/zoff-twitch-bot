@@ -83,7 +83,7 @@ passport.use(
       scope: "user_read"
     },
     function(accessToken, refreshToken, profile, done) {
-      dbase.channels.find({ channel: "#" + profile.username }, function(
+      dbase.channels.find({ channel: "#" + profile.login }, function(
         err,
         chan
       ) {
@@ -106,7 +106,7 @@ passport.use(
           return done(err, chan[0]);
         } else {
           var upsertDocument = {
-            channel: `#${profile.username}`,
+            channel: `#${profile.login}`,
             zoffchannel: "",
             zoffchannel_initialized: false,
             time: 0,
@@ -115,7 +115,7 @@ passport.use(
             userpass: ""
           };
           dbase.channels.update(
-            { channel: "#" + profile.username },
+            { channel: "#" + profile.login },
             upsertDocument,
             { upsert: true },
             function() {
