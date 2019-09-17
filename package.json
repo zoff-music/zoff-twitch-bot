@@ -18,6 +18,7 @@
     "node-rest-client": "^3.1.0",
     "passport": "^0.4.0",
     "passport-twitch": "^1.0.3",
+    "passport-twitch-new": "0.0.1",
     "path": "^0.12.7",
     "referrer-policy": "^1.2.0",
     "request": "^2.88.0",

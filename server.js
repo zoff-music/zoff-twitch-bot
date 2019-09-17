@@ -16,7 +16,7 @@ var secrets = require("./includes.js");
 var dbase = mongojs(secrets.mongojs, ["channels"]);
 var compression = require("compression");
 var passport = require("passport");
-var twitchStrategy = require("passport-twitch").Strategy;
+var twitchStrategy = require("passport-twitch-new").Strategy;
 
 app.engine("handlebars", hbs.engine);
 app.set("view engine", "handlebars");
