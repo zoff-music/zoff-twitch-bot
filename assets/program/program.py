@@ -67,7 +67,7 @@ def joinSocket(threadName, delay):
 
     if not joinedChannel:
         joinedChannel = True
-        sio.connect('http://localhost')
+        sio.connect('https://zoff.me')
         sio.wait()
     else:
         join_channel(channelName, password)
