@@ -1,2 +1,5 @@
 node_modules/
 includes.js
+assets/program/__pycache__
+assets/program/build
+assets/program/program.spec
