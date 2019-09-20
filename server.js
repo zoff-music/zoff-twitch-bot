@@ -173,7 +173,7 @@ app.post("/saveCommand", function(req, res) {
           { channel: req.user.channel },
           {
             $addToSet: {
-              commands: { key: req.body.key, value: req.body.value }
+              commands: { key: req.body.key, value: req.body.value.toString() }
             }
           },
           function(err) {
