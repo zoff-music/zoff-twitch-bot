@@ -79,7 +79,6 @@ function saveCommand(key, button) {
     firstSave = true;
     commandName = document.getElementById("key-" + key).value;
     commandName.trim();
-    return;
     if (commandName.length < 2) {
       toast("The command must be longer than 2 characters", false);
       return;
