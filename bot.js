@@ -36,7 +36,7 @@ var options = {
   },
   channels: ["#zoffbot"]
 };
-
+var crypto = require("./encryption");
 var client = new tmi.client(options);
 
 // Connect the client to the server..
@@ -267,11 +267,11 @@ function fetch_next_playing(channel) {
               userpass:
                 chan[0].userpass == "" || chan[0].userpass == undefined
                   ? ""
-                  : chan[0].userpass,
+                  : crypto.decrypt(chan[0].userpass),
               adminpass:
                 chan[0].adminpass == "" || chan[0].adminpass == undefined
                   ? ""
-                  : chan[0].adminpass,
+                  : crypto.decrypt(chan[0].adminpass),
               token: secrets.zoff_api_key
             },
             method: "POST"
@@ -389,11 +389,11 @@ function fetch_now_playing(channel) {
         userpass:
           chan[0].userpass == "" || chan[0].userpass == undefined
             ? ""
-            : chan[0].userpass,
+            : crypto.decrypt(chan[0].userpass),
         adminpass:
           chan[0].adminpass == "" || chan[0].adminpass == undefined
             ? ""
-            : chan[0].adminpass,
+            : crypto.decrypt(chan[0].adminpass),
         token: secrets.zoff_api_key
       },
       method: "POST"
@@ -615,8 +615,8 @@ function join_channel(channel, zoff_channel, userpass, adminpass) {
       channel: channel,
       zoffchannel: zoff_channel,
       time: 0,
-      userpass: userpass,
-      adminpass: adminpass
+      userpass: crypto.encrypt(userpass),
+      adminpass: crypto.encrypt(adminpass)
     },
     { upsert: true },
     function(err, docs) {
@@ -720,8 +720,8 @@ function add_song(song_info, channel, twitch_channel, requester) {
     duration: song_info.duration,
     end_time: song_info.duration,
     start_time: 0,
-    adminpass: adminpass,
-    userpass: userpass,
+    adminpass: crypto.decrypt(adminpass),
+    userpass: crypto.decrypt(userpass),
     token: secrets.zoff_api_key,
     source: song_info.source
   };

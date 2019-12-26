@@ -13,6 +13,7 @@ var bot = require("./bot.js");
 var mpromise = require("mpromise");
 var mongojs = require("mongojs");
 var secrets = require("./includes.js");
+var crypto = require("crypto");
 var dbase = mongojs(secrets.mongojs, ["channels"]);
 var compression = require("compression");
 var passport = require("passport");
@@ -222,6 +223,19 @@ app.post("/save", function(req, res) {
         return;
       }
     }
+
+    if (req.body.saveObject.adminpass != "") {
+      req.body.saveObject.adminpass = crypto.encrypt(
+        req.body.saveObject.adminpass
+      );
+    }
+
+    if (req.body.saveObject.userpass != "") {
+      req.body.saveObject.userpass = crypto.encrypt(
+        req.body.saveObject.userpass
+      );
+    }
+
     dbase.channels.update(
       { channel: req.user.channel },
       { $set: req.body.saveObject },
