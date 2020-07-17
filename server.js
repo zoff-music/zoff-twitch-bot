@@ -6,7 +6,7 @@ var exphbs = require("express-handlebars");
 var hbs = exphbs.create({
   defaultLayout: __dirname + "/layouts/main",
   layoutsDir: __dirname + "/layouts",
-  partialsDir: __dirname + "/partials"
+  partialsDir: __dirname + "/partials",
 });
 
 var bot = require("./bot.js");
@@ -17,7 +17,7 @@ var crypto = require("./encryption");
 var dbase = mongojs(secrets.mongojs, ["channels"]);
 var compression = require("compression");
 var passport = require("passport");
-var twitchStrategy = require("passport-twitch-new").Strategy;
+var twitchStrategy = require("@d-fischer/passport-twitch").Strategy;
 
 app.engine("handlebars", hbs.engine);
 app.set("view engine", "handlebars");
@@ -49,14 +49,14 @@ app.use(
       microphone: ["'none'"],
       camera: ["'none'"],
       speaker: ["*"],
-      syncXhr: ["'self'"]
+      syncXhr: ["'self'"],
       //notifications: ["'self'"]
-    }
+    },
   })
 );
 app.use(
   helmet({
-    frameguard: false
+    frameguard: false,
   })
 );
 
@@ -68,7 +68,7 @@ app.use(cookieSession({ secret: secrets.cookieSession }));
 app.use(bodyParser.json()); // to support JSON-encoded bodies
 app.use(
   bodyParser.urlencoded({
-    extended: true
+    extended: true,
   })
 );
 
@@ -81,10 +81,10 @@ passport.use(
       clientID: secrets.twitchConfig.clientID,
       clientSecret: secrets.twitchConfig.clientSecret,
       callbackURL: secrets.twitchConfig.redirectURI,
-      scope: "user_read"
+      scope: "user_read",
     },
-    function(accessToken, refreshToken, profile, done) {
-      dbase.channels.find({ channel: "#" + profile.login }, function(
+    function (accessToken, refreshToken, profile, done) {
+      dbase.channels.find({ channel: "#" + profile.login }, function (
         err,
         chan
       ) {
@@ -113,13 +113,13 @@ passport.use(
             time: 0,
             twitchId: profile.id,
             adminpass: "",
-            userpass: ""
+            userpass: "",
           };
           dbase.channels.update(
             { channel: "#" + profile.login },
             upsertDocument,
             { upsert: true },
-            function() {
+            function () {
               return done(err, upsertDocument);
             }
           );
@@ -129,20 +129,20 @@ passport.use(
   )
 );
 
-passport.serializeUser(function(user, done) {
+passport.serializeUser(function (user, done) {
   done(null, user);
 });
 
-passport.deserializeUser(function(user, done) {
+passport.deserializeUser(function (user, done) {
   done(null, user);
 });
 
-app.get("/", function(req, res) {
+app.get("/", function (req, res) {
   var data = {
-    year: 2019
+    year: 2019,
   };
   if (req.user) {
-    dbase.channels.find({ channel: req.user.channel }, function(err, chan) {
+    dbase.channels.find({ channel: req.user.channel }, function (err, chan) {
       if (chan.length > 0) {
         if (chan[0].userpass != "" && chan[0].userpass != undefined) {
           chan[0].userpass = "userpass set";
@@ -164,20 +164,20 @@ app.get("/", function(req, res) {
   }
 });
 
-app.post("/saveCommand", function(req, res) {
+app.post("/saveCommand", function (req, res) {
   if (req.user) {
     dbase.channels.update(
       { channel: req.user.channel },
       { $pull: { commands: { key: req.body.key } } },
-      function(err) {
+      function (err) {
         dbase.channels.update(
           { channel: req.user.channel },
           {
             $addToSet: {
-              commands: { key: req.body.key, value: req.body.value.toString() }
-            }
+              commands: { key: req.body.key, value: req.body.value.toString() },
+            },
           },
-          function(err) {
+          function (err) {
             if (err) {
               res.status(500).send({ error: true });
               return;
@@ -192,12 +192,12 @@ app.post("/saveCommand", function(req, res) {
   }
 });
 
-app.post("/deleteCommand", function(req, res) {
+app.post("/deleteCommand", function (req, res) {
   if (req.user) {
     dbase.channels.update(
       { channel: req.user.channel },
       { $pull: { commands: { key: req.body.key } } },
-      function(err) {
+      function (err) {
         if (err) {
           res.status(500).send({ error: true });
           return;
@@ -210,7 +210,7 @@ app.post("/deleteCommand", function(req, res) {
   }
 });
 
-app.post("/save", function(req, res) {
+app.post("/save", function (req, res) {
   if (req.user) {
     if (req.body.saveObject.zoffchannel) {
       req.body.saveObject.zoffchannel_initialized = true;
@@ -240,7 +240,7 @@ app.post("/save", function(req, res) {
       { channel: req.user.channel },
       { $set: req.body.saveObject },
       { upsert: true },
-      function(err, docs) {
+      function (err, docs) {
         if (!req.user.zoffchannel_initialized) {
           bot.join_channel_from_outside(
             req.user.channel,
@@ -255,14 +255,14 @@ app.post("/save", function(req, res) {
   }
 });
 
-app.get("/logout", function(req, res) {
+app.get("/logout", function (req, res) {
   req.logout();
   res.redirect("/");
 });
 
-app.post("/delete", function(req, res) {
+app.post("/delete", function (req, res) {
   if (req.user) {
-    dbase.channels.remove({ channel: req.user.channel }, function(err, docs) {
+    dbase.channels.remove({ channel: req.user.channel }, function (err, docs) {
       bot.leaveChannel(req.user.channel);
       res.status(200).send({ error: false });
     });
@@ -275,7 +275,7 @@ app.get("/auth/twitch", passport.authenticate("twitch", { forceVerify: true }));
 app.get(
   "/auth/twitch/callback",
   passport.authenticate("twitch", { failureRedirect: "/" }),
-  function(req, res) {
+  function (req, res) {
     // Successful authentication, redirect home.
     res.redirect("/");
   }
